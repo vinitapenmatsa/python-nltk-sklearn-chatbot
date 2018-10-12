@@ -23,18 +23,20 @@ def LemTokens(tokens):
     return [lemmer.lemmatize(token) for token in tokens]
 
 
-remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
-
-
 def LemNormalize(text):
-        return LemTokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
+        for p in string.punctuation:
+            text = text.replace(p, '')
+        return LemTokens(nltk.word_tokenize(text.lower()))
 
 
 GREETING_INPUTS = ("hello", "hi", "greetings", "sup", "what's up",
-                   "hey", "hola", "whatsup")
+                   "hey", "hola", "whatsup", "good morning", "morning")
 GREETING_RESPONSES = ["hi", "hey", "*nods*", "hi there", "hello",
                       "I am glad! You are talking to me",
                       "Hello , what do you want to ask me?"]
+
+CONVERSATION_STOPPERS = ("ok", "fine", "great", "nice", "ah", "alright", "yes", "no")
+CONVERSATION_STOPPER_RESPONSES = ["anything else?", "would that be it?", "have more questions?", "Ok, go on.."]
 
 
 # checking if GREETING
@@ -49,13 +51,13 @@ def greeting(sentence):
 def response(user_response):
     robo_response = ''
     TfidfVec = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
-    print 'Executing print transforms'
     tfidf = TfidfVec.fit_transform(sent_tokens)
     vals = cosine_similarity(tfidf[-1], tfidf)
     idx = vals.argsort()[0][-2]
     flat = vals.flatten()
     flat.sort()
     req_tfidf = flat[-2]
+    print req_tfidf
     if(req_tfidf == 0):
         robo_response = robo_response+"I am sorry! I don't understand you"
         return robo_response
@@ -65,7 +67,7 @@ def response(user_response):
 
 
 flag = True
-print("VIN: Hi, I'm Vinita Penmetsa. Im glad you are interested in my profile, Ask me anything regarding my work experience. If you want to exit, type Bye!")
+print("VINITA: Hi, I'm Vinita Penmetsa. Im glad you are interested in my profile. What do you want to know? If you want to exit, type Bye!")
 
 
 while(flag == True):
@@ -74,17 +76,20 @@ while(flag == True):
     if(user_response != 'bye'):
         if(user_response == 'thanks' or user_response == 'thank you'):
             flag = False
-            print("ROBO: You are welcome..")
+            print("VINITA: You are welcome..")
         else:
             if(greeting(user_response) != None):
-                print("ROBO: "+greeting(user_response))
+                print("VINITA: "+greeting(user_response))
             else:
-                sent_tokens.append(user_response)
-                word_tokens = word_tokens + nltk.word_tokenize(user_response)
-                final_words = list(set(word_tokens))
-                print("ROBO: ")
-                print(response(user_response))
-                sent_tokens.remove(user_response)
+                if(user_response.lower() in CONVERSATION_STOPPERS):
+                    print("VINITA: " + random.choice(CONVERSATION_STOPPER_RESPONSES))
+                else:
+                    sent_tokens.append(user_response)
+                    word_tokens = word_tokens + nltk.word_tokenize(user_response)
+                    final_words = list(set(word_tokens))
+                    print("VINITA: ")
+                    print(response(user_response))
+                    sent_tokens.remove(user_response)
     else:
         flag = False
-        print("ROBO: Bye! take care..")
+        print("VINITA: Bye! take care..")
